@@ -181,7 +181,7 @@ function Options2(){
 	clear
 	echo "OPTIONS (2/2)"
 	echo " "
-	#full=0..2 (single thread, external lace, middle lace (trocar por openACC ext lace))
+	#full=0..2 (single thread, external lace, middle lace (trocar por openACC ext lace)) TODO
 	echo "The software can be run in ways that certain parts of the CPU are stressed:"
 	echo "Press [0] for the full test"
 	echo "Press [1] for the fast test (weaker cache stress)"
@@ -362,7 +362,7 @@ function Graphics(){
 
 	mkdir -p Graphs
 	
-	#ARRANGE THE CORRECT PLOT FILES TO THE OPTIONS SET
+	#ARRANGE THE CORRECT PLOT FILES TO THE OPTIONS SET (TODO)
 	#python3 plota.py
 	#python3 plotaBars.py
 	#python3 plotb.py
