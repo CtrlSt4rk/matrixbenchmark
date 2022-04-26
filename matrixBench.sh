@@ -362,15 +362,9 @@ function Graphics(){
 
 	mkdir -p Graphs
 	
-	#ARRANGE THE CORRECT PLOT FILES TO THE OPTIONS SET (TODO)
-	#python3 plota.py
-	#python3 plotaBars.py
-	#python3 plotb.py
-	#python3 plotbBars.py
-	#python3 plotc.py
-	#python3 plotcBars.py
-	#python3 plotd.py
-	#python3 plotdBars.py
+	#TODO
+	#python3 plot.py
+	#python3 plotBars.py
 	#python3 plotSpeedup.py
 	#python3 plotSpeedupBars.py
 }
