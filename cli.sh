@@ -21,6 +21,7 @@ function getData(){
 	else
 		avx512=0
 	fi
+ 
 	gpu=$( neofetch | grep GPU | cut -d":" -f 2 | sed -r 's/^.{5}//' )
 
 	Settings
