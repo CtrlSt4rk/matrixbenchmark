@@ -1,15 +1,16 @@
 HEADERS = header.h
 
-all: mmatriz0 mmatriz1
+#compiler optimization flag
+CFLAGS = -O2
 
-mmatriz0: BenchFloat.c
-	gcc ${CFLAGS} BenchFloat.c -o BenchFloat -lm -fopenmp
+all: cpufloat cpuint
+
+cpufloat: CPUFloat.c
+	gcc $(CFLAGS) CPUFloat.c -o CPUFloat.x -lm -fopenmp
 	
-mmatriz1: BenchInt.c
-	gcc ${CFLAGS} BenchInt.c -o BenchInt -lm -fopenmp
+cpuint: CPUInt.c
+	gcc $(CFLAGS) CPUInt.c -o CPUInt.x -lm -fopenmp
 	
 clean:
-	-rm -f BenchFloat.o
-	-rm -f BenchFloat
-	-rm -f BenchInt.o
-	-rm -f BenchInt
+	-rm -f CPUFloat.x
+	-rm -f CPUInt.x
