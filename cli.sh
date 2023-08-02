@@ -14,33 +14,46 @@ function getData(){
 		cores=$( grep -c ^processor /proc/cpuinfo )
 	fi
 
+	avx512data=$(gcc -march=native -dM -E - < /dev/null | egrep "AVX512" | sort)
+	if [[ -n "$avx512data" ]]
+	then
+		avx512=1
+	else
+		avx512=0
+	fi
 	gpu=$( neofetch | grep GPU | cut -d":" -f 2 | sed -r 's/^.{5}//' )
+
 	Settings
 }
 
 function Settings(){
-	smt=Enabled
-	matrixSize=Medium
-	mode=CPU
+	smt="Enabled"
+	matrixSize="Medium"
+	if [ $avx512 -eq 1 ]
+	then
+		mode="AVX-512"
+	else
+		mode="CPU"
+	fi
 }
 
 function Start(){
-	clear
+	# clear
 	echo "MatrixBench v2.0"
 	echo " "
 
 	echo "$cpu/$cpuTurboFreq"
 	if  [ $smt = "ht" ]
 	then 
-		echo "Cores: $phyCores physical / $cores logical"
+		echo "CPU Cores: $phyCores physical / $cores logical"
 	else
-		echo "Cores: $cores physical / $cores logical"
+		echo "CPU Cores: $cores physical / $cores logical"
 	fi
 	echo "$gpu"
 
 	echo ""
 	echo "Current Settings:"
-	echo "	Mode: $option"
+	echo "	Mode: $mode"
 	echo "	SMT: $smt"
 	echo "	Matrix Size: $matrixSize"
 	echo ""
@@ -180,6 +193,9 @@ function Run(){
 		GPU)
 			ResultGPUInt= ./GPUInt.x $matrixSizeNum
 			ResultGPUFloat= ./GPUFloat.x $matrixSizeNum;;
+		AVX512)
+			ResultAVX512Int= ./AVX512Int.x $matrixSizeNum $cputhreads
+			ResultAVX512Float= ./AVX512Float.x $matrixSizeNum $cputhreads;;
 			
 	esac
 }
