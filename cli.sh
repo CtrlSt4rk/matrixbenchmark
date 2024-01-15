@@ -1,25 +1,42 @@
 #!/bin/bash
 
 function getData(){
-	smt=$( cat /proc/cpuinfo | grep -o ht | uniq )
-	cpu=$( lscpu | grep 'Model name' | cut -f 2 -d ":" | awk '{$1=$1}1' )
-	# cpuCurrFreq=$( grep 'cpu MHz' /proc/cpuinfo | head -1 | awk -F: '{print $2/1024}' )
-	cpuTurboFreq=$( neofetch | grep CPU | cut -d"@" -f 2 | sed -r 's/^.{1}//' )
+	arch="$(uname -m)"
 
-	if  [ $smt = "ht" ]
-	then 
-		cores=$( grep -c ^processor /proc/cpuinfo )
-		phyCores=$( grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}' )
-	else
-		cores=$( grep -c ^processor /proc/cpuinfo )
+	if [ "$arch" = arm64 ]
+	then
+		phyCores=$( echo "$(system_profiler SPHardwareDataType)" | sed -n 9p | cut -d ":" -f2 |  awk -F'[^0-9]+' '{ print $2 }' )
 	fi
 
-	avx512data=$(gcc -march=native -dM -E - < /dev/null | egrep "AVX512" | sort)
-	if [[ -n "$avx512data" ]]
+	if [ "$arch" = x86_64 ]
 	then
-		avx512=1
+		smt=$( cat /proc/cpuinfo | grep -o ht | uniq )
+		cpu=$( lscpu | grep 'Model name' | cut -f 2 -d ":" | awk '{$1=$1}1' )
+		# cpuCurrFreq=$( grep 'cpu MHz' /proc/cpuinfo | head -1 | awk -F: '{print $2/1024}' )
+		cpuTurboFreq=$( neofetch | grep CPU | cut -d"@" -f 2 | sed -r 's/^.{1}//' )
+
+		if  [ "$smt" = "ht" ]
+		then 
+			cores=$( grep -c ^processor /proc/cpuinfo )
+			phyCores=$( grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}' )
+		else
+			cores=$( grep -c ^processor /proc/cpuinfo )
+		fi
+
+		avx512data=$(gcc -march=native -dM -E - < /dev/null | egrep "AVX512" | sort)
+		if [[ -n "$avx512data" ]]
+		then
+			avx512=1
+		else
+			avx512=0
+		fi
+	fi
+
+	if [ "$smt" != "ht" ]
+	then
+		cputhreads=$phyCores
 	else
-		avx512=0
+		cputhreads=$cores
 	fi
  
 	gpu=$( neofetch | grep GPU | cut -d":" -f 2 | sed -r 's/^.{5}//' )
@@ -28,9 +45,17 @@ function getData(){
 }
 
 function Settings(){
-	smt="Enabled"
+	if [ "$arch" = x86_64 ]
+	then
+		smt="Enabled"
+	else
+		smt="Disabled"
+	fi
+
 	matrixSize="Medium"
-	if [ $avx512 -eq 1 ]
+	matrixSizeNum="4000"
+
+	if [ avx512 = 1 ]
 	then
 		mode="AVX-512"
 	else
@@ -39,18 +64,28 @@ function Settings(){
 }
 
 function Start(){
-	# clear
+	clear
 	echo "MatrixBench v2.0"
 	echo " "
 
-	echo "$cpu/$cpuTurboFreq"
-	if  [ $smt = "ht" ]
-	then 
-		echo "CPU Cores: $phyCores physical / $cores logical"
-	else
-		echo "CPU Cores: $cores physical / $cores logical"
+	if [ "$arch" = x86_64 ]
+	then
+		echo "$cpu/$cpuTurboFreq"
+		if  [ $smt = "ht" ]
+		then 
+			echo "Arch: $arch"
+			echo "CPU Cores: $phyCores physical / $cores logical"
+		else
+			echo "Arch: $arch"
+			echo "CPU Cores: $cores physical / $cores logical"
+		fi
 	fi
-	echo "$gpu"
+	if [ "$arch" = arm64 ]
+	then
+		echo "Arch: $arch"
+		echo "CPU: $phyCores cores" #change to $cores for biglittle and add a if for arm64
+	fi
+	echo "GPU: $gpu"
 
 	echo ""
 	echo "Current Settings:"
@@ -166,17 +201,11 @@ function Options(){
 		   Start;;
 	esac
 
-	if [ smt == "Disabled" ]
-	then
-		cputhreads=$phyCores
-	else
-		cputhreads=$cores
-	fi
 	case $matrixSize in
-		Small) matrixSizeNum = 1000;;
-		Medium) matrixSizeNum = 4000;;
-		Large) matrixSizeNum = 10000
-	esac				 
+		Small) matrixSizeNum="1000";;
+		Medium) matrixSizeNum="4000";;
+		Large) matrixSizeNum="10000"
+	esac
 
 	Options
 }
@@ -185,20 +214,34 @@ function Run(){
 	clear
 	echo "MatrixBench v2.0"
 	echo ""
-	echo "Running:"
-
+	echo "Running..."
 	case $mode in
 		CPU)
-			ResultCPUInt= ./CPUInt.x $matrixSizeNum $cputhreads
-			ResultCPUFloat= ./CPUFloat.x $matrixSizeNum $cputhreads;;
+			ResultInt=$(./CPUInt.x $matrixSizeNum $cputhreads IPsetName 1.1.1.1 2>&1)
+			ResultFloat=$(./CPUFloat.x $matrixSizeNum $cputhreads IPsetName 1.1.1.1 2>&1);;
 		GPU)
-			ResultGPUInt= ./GPUInt.x $matrixSizeNum
-			ResultGPUFloat= ./GPUFloat.x $matrixSizeNum;;
+			ResultInt=$(./GPUInt.x $matrixSizeNum IPsetName 1.1.1.1 2>&1)
+			ResultFloat=$(./GPUFloat.x $matrixSizeNum IPsetName 1.1.1.1 2>&1);;
 		AVX512)
-			ResultAVX512Int= ./AVX512Int.x $matrixSizeNum $cputhreads
-			ResultAVX512Float= ./AVX512Float.x $matrixSizeNum $cputhreads;;
-			
+			ResultInt=$(./AVX512Int.x $matrixSizeNum $cputhreads IPsetName 1.1.1.1 2>&1)
+			ResultFloat=$(./AVX512Float.x $matrixSizeNum $cputhreads IPsetName 1.1.1.1 2>&1);;	
 	esac
+	Results
+}
+
+function Results(){
+	clear
+	echo "MatrixBench v2.0"
+	echo ""
+	echo "Settings used:"
+	echo "Matrix size: $matrixSize ($matrixSizeNum rows/columns)"
+	echo "CPU threads: $cputhreads"
+	echo ""
+	echo "Results:"
+	echo "	Integer: $ResultInt""s"
+	echo "	Float: $ResultFloat""s"
+	echo ""
+	echo "Benchmark successfully completed"
 }
 
 make clean && make
